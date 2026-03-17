@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>精选电商平台</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="nameGate" class="name-gate">
+      <div class="gate-card">
+        <h1>欢迎来到精选电商平台</h1>
+        <p>请先输入你的名字，再开始逛商品。</p>
+        <div class="gate-form">
+          <input id="nameInput" type="text" maxlength="24" placeholder="请输入你的名字" />
+          <button id="enterBtn">进入平台</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="app" class="app hidden">
+      <header class="top-header">
+        <div class="brand-area">
+          <h2>精选电商平台</h2>
+          <p id="welcomeText">欢迎你</p>
+        </div>
+        <div class="controls">
+          <input id="searchInput" type="search" placeholder="搜索商品名称或品牌" />
+          <select id="sortSelect">
+            <option value="default">默认排序</option>
+            <option value="priceAsc">价格从低到高</option>
+            <option value="priceDesc">价格从高到低</option>
+            <option value="ratingDesc">好评率从高到低</option>
+          </select>
+        </div>
+      </header>
+
+      <nav class="category-nav" aria-label="商品分类导航">
+        <div id="quickCategories" class="quick-categories"></div>
+        <div class="more-menu">
+          <button id="moreBtn" class="more-btn">更多分类 ▾</button>
+          <div id="moreDropdown" class="dropdown hidden"></div>
+        </div>
+      </nav>
+
+      <main>
+        <div id="summary" class="summary"></div>
+        <section id="productGrid" class="product-grid" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

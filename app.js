@@ -10,19 +10,6 @@ const state = {
 
 const categoryLimit = 7;
 
-const categoryImageMap = {
-  手机数码: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/640px-Apple_logo_black.svg.png",
-  家用电器: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/LG_logo_%282014%29.svg/640px-LG_logo_%282014%29.svg.png",
-  电脑办公: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Lenovo_logo_2015.svg/640px-Lenovo_logo_2015.svg.png",
-  食品生鲜: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Food_placeholder.png/640px-Food_placeholder.png",
-  服饰鞋包: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Logo_NIKE.svg/640px-Logo_NIKE.svg.png",
-  个护清洁: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Unilever_logo.svg/640px-Unilever_logo.svg.png",
-  母婴用品: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Baby_bottle_icon.svg/640px-Baby_bottle_icon.svg.png",
-  运动户外: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Decathlon_Logo.svg/640px-Decathlon_Logo.svg.png",
-  家居家装: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/IKEA_logo.svg/640px-IKEA_logo.svg.png",
-  汽车用品: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cc/Bosch-logo.svg/640px-Bosch-logo.svg.png",
-};
-
 const trustedPlatforms = [
   { name: "京东", site: "https://www.jd.com" },
   { name: "天猫", site: "https://www.tmall.com" },
@@ -32,10 +19,21 @@ const trustedPlatforms = [
   { name: "图片来源（Wikimedia Commons）", site: "https://commons.wikimedia.org" },
 ];
 
-function safeFallbackSvg(name) {
-  const text = encodeURIComponent(name.slice(0, 12));
+function buildProductImage(product) {
+  const title = `${product.商品品牌} ${product.商品类别}`.slice(0, 18);
+  const subtitle = `${product.商品名称}`.slice(0, 24);
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'><rect width='100%' height='100%' fill='#eef2ff'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-size='28' fill='#334155'>${name || text}</text></svg>`
+    `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360'>
+      <defs>
+        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0%' stop-color='#dbeafe'/>
+          <stop offset='100%' stop-color='#eef2ff'/>
+        </linearGradient>
+      </defs>
+      <rect width='100%' height='100%' fill='url(#g)'/>
+      <text x='40' y='158' font-size='34' fill='#1e3a8a' font-family='Arial, sans-serif'>${title}</text>
+      <text x='40' y='206' font-size='24' fill='#334155' font-family='Arial, sans-serif'>${subtitle}</text>
+    </svg>`
   )}`;
 }
 
@@ -50,9 +48,39 @@ async function loadProducts() {
     const item = Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? ""]));
     item.售价 = Number(item.售价);
     item.__index = index;
-    item.image = categoryImageMap[item.商品类别] || safeFallbackSvg(item.商品类别);
+    item.image = buildProductImage(item);
     return item;
   });
+}
+
+const STORAGE_KEY = "shopping_platform_visitor";
+
+function getStoredVisitor() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveVisitor(name) {
+  const stored = getStoredVisitor();
+  const visitor = {
+    id: stored?.id || `U${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    name,
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(visitor));
+  return visitor;
+}
+
+function enterApp(name) {
+  state.visitorName = name;
+  document.getElementById("nameGate").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  const visitor = getStoredVisitor();
+  const idPart = visitor?.id ? `（ID: ${visitor.id}）` : "";
+  document.getElementById("welcomeText").textContent = `欢迎你，${name}${idPart}`;
 }
 
 function setupNameGate() {
@@ -67,11 +95,15 @@ function setupNameGate() {
       input.focus();
       return;
     }
-    state.visitorName = name;
-    gate.classList.add("hidden");
-    app.classList.remove("hidden");
-    document.getElementById("welcomeText").textContent = `欢迎你，${name}`;
+    saveVisitor(name);
+    enterApp(name);
   };
+
+  const existing = getStoredVisitor();
+  if (existing?.name) {
+    input.value = existing.name;
+    enterApp(existing.name);
+  }
 
   btn.addEventListener("click", enter);
   input.addEventListener("keydown", (e) => {
@@ -149,7 +181,7 @@ function renderProducts(list) {
     const card = document.createElement("article");
     card.className = "product-card";
     card.innerHTML = `
-      <img loading="lazy" src="${p.image}" alt="${p.商品名称}" onerror="this.src='${safeFallbackSvg("商品图片")}';" />
+      <img loading="lazy" src="${p.image}" alt="${p.商品名称}" />
       <div class="product-content">
         <h3 class="product-title">${p.商品名称}</h3>
         <div class="meta">类别：${p.商品类别}</div>
